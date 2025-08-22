@@ -1,60 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Final Boss Health</title>
-    <style>
-        body { background-color: #1a1a1a; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .boss-container { width: 80%; text-align: center; }
-        h1 { font-size: 3em; margin-bottom: 20px; text-transform: uppercase; }
-        .hp-bar-background { width: 100%; background-color: #444; border-radius: 20px; border: 3px solid #000; padding: 5px; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
-        .hp-bar-foreground { height: 50px; background-color: #d90429; border-radius: 15px; width: 100%; transition: width 1.5s ease-out; }
-        .hp-text { font-size: 1.8em; font-weight: bold; margin-top: 10px; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Final Boss Health</title>
+  <style>
+    :root {
+      --bg:#1a1a1a;
+      --fg:#ffffff;
+      --bar-bg:#444;
+      --bar:#d90429;
+      --bar-border:#000;
+      --radius-pill:9999px;
+      --space-2:12px;
+      --space-3:16px;
+      --space-4:24px;
+      --shadow:0 0 15px rgba(0,0,0,.5);
+    }
+
+    body {
+      margin:0;
+      color:var(--fg);
+      background:var(--bg);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:100svh;
+      padding:var(--space-4);
+    }
+
+    /* NEW: Two-column wrapper */
+    .layout {
+      display:flex;
+      flex-direction:column;
+      gap:var(--space-4);
+      width:100%;
+      max-width:1200px;
+    }
+    @media(min-width:768px){
+      .layout {
+        flex-direction:row;
+        align-items:flex-start;
+      }
+      .column {
+        flex:1;
+      }
+    }
+
+    /* Left boss container */
+    .boss-container {
+      display:flex;
+      flex-direction:column;
+      gap:var(--space-3);
+      text-align:center;
+    }
+
+    h1 {
+      margin:0;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      font-weight:800;
+      font-size:clamp(1.5rem, 7vw, 3rem);
+    }
+
+    .hp-wrap {
+      display:flex;
+      flex-direction:column;
+      gap:var(--space-2);
+      align-items:stretch;
+    }
+
+    .hp-bar-background {
+      display:flex;
+      align-items:center;
+      width:100%;
+      background:var(--bar-bg);
+      border:3px solid var(--bar-border);
+      border-radius:var(--radius-pill);
+      padding:6px;
+      box-shadow:var(--shadow);
+      min-height:clamp(32px, 8vw, 68px);
+    }
+
+    .hp-bar-foreground {
+      height:clamp(20px, 6vw, 50px);
+      background:var(--bar);
+      border-radius:var(--radius-pill);
+      width:100%;
+      transition:width 1.5s ease-out;
+    }
+
+    .hp-text {
+      margin:0;
+      font-weight:800;
+      line-height:1.2;
+      font-size:clamp(1rem, 5vw, 1.75rem);
+      text-shadow:0 1px 0 rgba(0,0,0,.3);
+    }
+
+    @media (min-width:640px){
+      .hp-wrap {
+        flex-direction:row;
+        align-items:center;
+        text-align:left;
+      }
+      .hp-bar-background { flex:1 }
+      .hp-text { padding-left:var(--space-3) }
+    }
+  </style>
 </head>
 <body>
-    <div class="boss-container">
-        <h1>FINAL BOSS</h1>
-        <div class="hp-bar-background">
-            <div class="hp-bar-foreground" id="healthBar"></div>
+  <div class="layout">
+    <!-- LEFT COLUMN -->
+    <div class="column boss-container">
+      <h1>Final Boss</h1>
+      <div class="hp-wrap">
+        <div class="hp-bar-background" aria-label="Health bar">
+          <div class="hp-bar-foreground" id="healthBar" role="progressbar"></div>
         </div>
         <p class="hp-text" id="healthText">Loading...</p>
+      </div>
     </div>
 
-    <script>
-        // IMPORTANT: Paste your Google Apps Script Web App URL here!
-        const SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE"; 
+    <!-- RIGHT COLUMN -->
+    <div class="column" style="text-align:center">
+      <h2>Right Column</h2>
+      <p>This is where you can put extra content, stats, or anything else.</p>
+    </div>
+  </div>
 
-        const healthBar = document.getElementById('healthBar');
-        const healthText = document.getElementById('healthText');
+  <script>
+    const SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
 
-        async function updateHealth() {
-            try {
-                const response = await fetch(SCRIPT_URL);
-                if (!response.ok) throw new Error('Network response was not ok.');
-                
-                const data = await response.json();
-                
-                const currentHP = data.currentHP > 0 ? data.currentHP : 0; // Prevent negative HP
-                const maxHP = data.maxHP;
-                const healthPercentage = (currentHP / maxHP) * 100;
+    const healthBar = document.getElementById('healthBar');
+    const healthText = document.getElementById('healthText');
 
-                // Update the visual bar width
-                healthBar.style.width = healthPercentage + '%';
-                
-                // Update the text display
-                healthText.innerText = `${currentHP.toLocaleString()} / ${maxHP.toLocaleString()} HP`;
+    async function updateHealth() {
+      try {
+        const response = await fetch(SCRIPT_URL, { cache: "no-store" });
+        if (!response.ok) throw new Error('Network response was not ok.');
 
-            } catch (error) {
-                console.error('Failed to fetch health data:', error);
-                healthText.innerText = "Error fetching data.";
-            }
-        }
+        const data = await response.json();
+        const currentHP = Math.max(0, Number(data.currentHP));
+        const maxHP = Math.max(1, Number(data.maxHP));
+        const healthPercentage = Math.max(0, Math.min(100, (currentHP / maxHP) * 100));
 
-        // Fetch data immediately on page load, then update every 15 seconds
-        updateHealth();
-        setInterval(updateHealth, 15000); // 15000ms = 15 seconds
-    </script>
+        healthBar.style.width = healthPercentage + '%';
+        healthText.innerText = `${currentHP.toLocaleString()} / ${maxHP.toLocaleString()} HP`;
+      } catch (error) {
+        console.error('Failed to fetch health data:', error);
+        healthText.innerText = "Error fetching data.";
+      }
+    }
+
+    updateHealth();
+    setInterval(updateHealth, 15000);
+  </script>
 </body>
 </html>
