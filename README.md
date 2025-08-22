@@ -1,4 +1,4 @@
-![HP Boss](image.png)
+![HP Boss](assets/img/image.png)
 
 # TODOs
 
