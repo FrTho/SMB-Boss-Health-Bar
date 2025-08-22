@@ -5,134 +5,115 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Final Boss Health</title>
   <style>
-    :root {
-      --bg:#1a1a1a;
-      --fg:#ffffff;
-      --bar-bg:#444;
-      --bar:#d90429;
-      --bar-border:#000;
-      --radius-pill:9999px;
-      --space-2:12px;
-      --space-3:16px;
-      --space-4:24px;
+    :root{
+      --bg:#1a1a1a; --fg:#fff; --bar-bg:#444; --bar:#d90429; --bar-border:#000;
+      --radius-pill:9999px; --space-2:12px; --space-3:16px; --space-4:24px;
       --shadow:0 0 15px rgba(0,0,0,.5);
     }
 
-    body {
-      margin:0;
-      color:var(--fg);
-      background:var(--bg);
+    /* Page */
+    html,body{height:100%}
+    body{
+      margin:0; color:var(--fg); background:var(--bg);
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      min-height:100svh;
-      padding:var(--space-4);
+      display:flex; align-items:center; justify-content:center; min-height:100svh; padding:var(--space-4);
     }
 
-    /* NEW: Two-column wrapper */
-    .layout {
+    /* Two-column layout */
+    .layout{
       display:flex;
-      flex-direction:column;
-      gap:var(--space-4);
       width:100%;
       max-width:1200px;
+      gap:var(--space-4);
     }
-    @media(min-width:768px){
-      .layout {
-        flex-direction:row;
-        align-items:flex-start;
-      }
-      .column {
-        flex:1;
-      }
+    /* LEFT: fixed to 30% */
+    .column-left{
+      flex:0 0 30%;
+      max-width: 30%;
+      display:flex;
+      flex-direction:column;
+    }
+    /* RIGHT: takes remaining space */
+    .column-right{
+      flex:1 1 0;
+      min-width:0; /* prevents overflow with long content */
     }
 
-    /* Left boss container */
-    .boss-container {
+    /* Boss container */
+    .boss-container{
       display:flex;
       flex-direction:column;
       gap:var(--space-3);
       text-align:center;
     }
-
-    h1 {
+    h1{
       margin:0;
-      text-transform:uppercase;
-      letter-spacing:.08em;
-      font-weight:800;
-      font-size:clamp(1.5rem, 7vw, 3rem);
+      text-transform:uppercase; letter-spacing:.08em; font-weight:800;
+      font-size:clamp(1.25rem, 5vw, 2rem);
     }
 
-    .hp-wrap {
+    .hp-wrap{
       display:flex;
-      flex-direction:column;
+      flex-direction:column;     /* keep text below bar */
       gap:var(--space-2);
       align-items:stretch;
     }
 
-    .hp-bar-background {
-      display:flex;
-      align-items:center;
-      width:100%;
-      background:var(--bar-bg);
-      border:3px solid var(--bar-border);
-      border-radius:var(--radius-pill);
-      padding:6px;
-      box-shadow:var(--shadow);
-      min-height:clamp(32px, 8vw, 68px);
+    .hp-bar-background{
+      display:flex; align-items:center; width:100%;
+      background:var(--bar-bg); border:3px solid var(--bar-border);
+      border-radius:var(--radius-pill); padding:6px; box-shadow:var(--shadow);
+      min-height:clamp(28px, 6vw, 56px);
+    }
+    .hp-bar-foreground{
+      height:clamp(18px, 5vw, 44px);
+      background:var(--bar); border-radius:var(--radius-pill);
+      width:100%; transition:width 1.5s ease-out;
     }
 
-    .hp-bar-foreground {
-      height:clamp(20px, 6vw, 50px);
-      background:var(--bar);
-      border-radius:var(--radius-pill);
-      width:100%;
-      transition:width 1.5s ease-out;
-    }
-
-    .hp-text {
-      margin:0;
-      font-weight:800;
-      line-height:1.2;
-      font-size:clamp(1rem, 5vw, 1.75rem);
+    .hp-text{
+      margin:0; font-weight:800; line-height:1.2;
+      font-size:clamp(.95rem, 4.5vw, 1.25rem);
       text-shadow:0 1px 0 rgba(0,0,0,.3);
     }
 
-    @media (min-width:640px){
-      .hp-wrap {
-        flex-direction:row;
-        align-items:center;
-        text-align:left;
-      }
-      .hp-bar-background { flex:1 }
-      .hp-text { padding-left:var(--space-3) }
+    /* Optional: allow wrap on extremely narrow screens so 20% isn't too tiny */
+    @media (max-width:520px){
+      .layout{ flex-wrap:wrap; }
+      .column-left{ flex:1 1 100%; max-width:100%; }
+      .column-right{ flex:1 1 100%; }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .hp-bar-foreground{ transition:none; }
     }
   </style>
 </head>
 <body>
   <div class="layout">
-    <!-- LEFT COLUMN -->
-    <div class="column boss-container">
-      <h1>Final Boss</h1>
-      <div class="hp-wrap">
-        <div class="hp-bar-background" aria-label="Health bar">
-          <div class="hp-bar-foreground" id="healthBar" role="progressbar"></div>
+    <!-- LEFT (30%) -->
+    <div class="column-left">
+      <div class="boss-container">
+        <h1>Final Boss</h1>
+        <div class="hp-wrap">
+          <div class="hp-bar-background" aria-label="Health bar">
+            <div class="hp-bar-foreground" id="healthBar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"></div>
+          </div>
+          <p class="hp-text" id="healthText">Loading...</p>
         </div>
-        <p class="hp-text" id="healthText">Loading...</p>
       </div>
     </div>
 
-    <!-- RIGHT COLUMN -->
-    <div class="column" style="text-align:center">
-      <h2>Right Column</h2>
-      <p>This is where you can put extra content, stats, or anything else.</p>
+    <!-- RIGHT (80%) -->
+    <div class="column-right">
+      <h2 style="margin:0 0 8px 0;">Right Column</h2>
+      <p style="margin:0 0 16px 0; opacity:.9">Put your additional content, stats, controls, etc. here.</p>
+      <!-- Add whatever you need -->
     </div>
   </div>
 
   <script>
     const SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
-
     const healthBar = document.getElementById('healthBar');
     const healthText = document.getElementById('healthText');
 
@@ -140,20 +121,30 @@
       try {
         const response = await fetch(SCRIPT_URL, { cache: "no-store" });
         if (!response.ok) throw new Error('Network response was not ok.');
-
         const data = await response.json();
+
         const currentHP = Math.max(0, Number(data.currentHP));
         const maxHP = Math.max(1, Number(data.maxHP));
         const healthPercentage = Math.max(0, Math.min(100, (currentHP / maxHP) * 100));
 
         healthBar.style.width = healthPercentage + '%';
-        healthText.innerText = `${currentHP.toLocaleString()} / ${maxHP.toLocaleString()} HP`;
-      } catch (error) {
-        console.error('Failed to fetch health data:', error);
-        healthText.innerText = "Error fetching data.";
+        healthBar.setAttribute('aria-valuenow', Math.round(healthPercentage));
+        healthText.textContent = `${currentHP.toLocaleString()} / ${maxHP.toLocaleString()} HP`;
+      } catch (e) {
+        console.error('Failed to fetch health data:', e);
+        healthText.textContent = "Error fetching data.";
       }
     }
 
+    // TODO: rehit API every 20 mins
+    //
+    // asuumptions:
+    // - 7 devices
+    // - 5 games
+    // - run for 3 hours (180 mins)
+    //
+    // 7 devices x 5 games = 35 requests
+    // (180 / 20) * 35 = 315 requests
     updateHealth();
     setInterval(updateHealth, 15000);
   </script>
