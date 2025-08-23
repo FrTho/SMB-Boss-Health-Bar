@@ -173,6 +173,8 @@
         healthBar.style.width = healthPercentage + '%';
         healthBar.setAttribute('aria-valuenow', Math.round(healthPercentage));
         healthText.textContent = `${currentHP.toLocaleString()} / ${maxHP.toLocaleString()} HP`;
+
+        setBossImageByHP(healthPercentage);
       } catch (e) {
         console.error('Failed to fetch health data:', e);
         healthText.textContent = "Error fetching data.";
