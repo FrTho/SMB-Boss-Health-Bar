@@ -301,12 +301,23 @@
     }
 
     /* ===== Kickoff + intervals ===== */
+    const HIT_API_EVERY_X_MIN = 20;
+    const HIT_API_EVERY_SEC = HIT_API_EVERY_X_MIN * 60;
+    const HIT_API_EVERY_MIL_SEC = HIT_API_EVERY_SEC * 100;
+
+    // asuumptions:
+    // - 7 devices
+    // - 5 games
+    // - run for 3 hours (180 mins)
+    //
+    // 7 devices x 5 games = 35 requests
+    // (180 / 20) * 35 = 315 requests
     updateHealth();
-    setInterval(updateHealth, 15000);
+    setInterval(updateHealth, HIT_API_EVERY_MIL_SEC);
 
     updateLeaderboard();
     // Update leaderboard every 30s (tweak as needed)
-    setInterval(updateLeaderboard, 30000);
+    setInterval(updateLeaderboard, HIT_API_EVERY_MIL_SEC);
   </script>
 </body>
 </html>
