@@ -92,10 +92,11 @@
       background:var(--table-row);
       border-radius:12px;
     }
+    /* Make each “row” look like a card with rounded corners */
     .lb-row .lb-td:first-child{ border-top-left-radius:12px; border-bottom-left-radius:12px; }
     .lb-row .lb-td:last-child{ border-top-right-radius:12px; border-bottom-right-radius:12px; }
 
-    /* Mana bar */
+    /* Mana bar (similar to HP bar but blue) */
     .mana-wrap{ display:flex; flex-direction:column; gap:6px; }
     .mana-bar-bg{
       display:flex; align-items:center;
@@ -136,12 +137,12 @@
       font-weight: 700;
     }
 
-    /* Narrow screens */
+    /* Narrow screens: stack columns */
     @media (max-width:520px){
       .layout{ flex-wrap:wrap; }
       .column-left{ flex:1 1 100%; max-width:100%; }
       .column-right{ flex:1 1 100%; }
-      .lb-th:nth-child(3), .lb-td:nth-child(3){ display:none; }
+      .lb-th:nth-child(3), .lb-td:nth-child(3){ display:none; } /* hide Total Damage label column header on very small screens to save space; value remains in column 2 text */
     }
 
     @media (prefers-reduced-motion: reduce){
@@ -155,6 +156,8 @@
     <div class="column-left">
       <div class="boss-container">
         <h1>Final Boss</h1>
+
+        <!-- Circle-cropped portrait -->
         <div class="boss-portrait">
           <img id="bossImage" src="assets/img/boss-1.png" alt="Boss portrait" />
         </div>
@@ -203,9 +206,9 @@
     const DAMAGE_HISTORY_SCRIPT_URL= "YOUR_DAMAGE_HISTORY_APPS_SCRIPT_URL_HERE";
 
     /* ===== Assets ===== */
-    const IMG_FULL  = "assets/img/boss-1.png";
-    const IMG_HALF  = "assets/img/boss-2.png";
-    const IMG_QUART = "assets/img/boss-3.png";
+    const IMG_FULL  = "assets/img/boss-1.png"; // 50–100% (and 100%)
+    const IMG_HALF  = "assets/img/boss-2.png"; // < 50%
+    const IMG_QUART = "assets/img/boss-3.png"; // < 25%
 
     /* ===== DOM ===== */
     const healthBar  = document.getElementById('healthBar');
@@ -244,8 +247,8 @@
 
     /* ===== Leaderboard ===== */
     function renderLeaderboard(groups){
-      groups.sort((a,b) => (b.totalDamage||0) - (a.totalDamage||0));
-      lbBody.innerHTML = "";
+      groups.sort((a,b) => (b.totalDamage||0) - (a.totalDamage||0)); // sort by totalDamage desc
+      lbBody.innerHTML = ""; // clear
       for (const g of groups){
         const tr = document.createElement('tr'); tr.className = "lb-row";
 
@@ -281,6 +284,7 @@
         const res = await fetch(LEADERBOARD_SCRIPT_URL, { cache: "no-store" });
         if (!res.ok) throw new Error("Leaderboard API not ok");
         const data = await res.json();
+        // Expect an array of groups
         renderLeaderboard(Array.isArray(data) ? data : (data.groups || []));
         // If your leaderboard endpoint already returns history under `history`, render it too:
         if (data && data.history) renderDamageHistory(data.history);
@@ -300,7 +304,7 @@
     // Expected item shape: { team: "Name", damage: 123, timestamp: "2025-08-25T10:15:00Z" }
     function renderDamageHistory(history, getXNumberOfRecords){
       if (!Array.isArray(history)) return;
-      // Sort newest first, then take 10
+      // Sort newest first, then take getXNumberOfRecords
       history.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
       const topRecords = history.slice(0,getXNumberOfRecords);
 
@@ -346,7 +350,7 @@
 
     /* ===== Kickoff + intervals ===== */
     const HIT_API_EVERY_MIN = 20;
-    const INTERVAL_MS = HIT_API_EVERY_MIN * 60 * 1000; // fixed: multiply by 1000
+    const INTERVAL_MS = HIT_API_EVERY_MIN * 60 * 1000;
 
     updateHealth();
     updateLeaderboard();
