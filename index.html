@@ -8,8 +8,7 @@
     :root{
       --bg:#1a1a1a; --fg:#fff;
       --bar-bg:#444; --bar:#d90429; --bar-border:#000;
-      --mana:#2d7cf6;               /* mana color */
-      --mana-glow:rgba(45,124,246,.35);
+      --mana:#2d7cf6; --mana-glow:rgba(45,124,246,.35);
       --radius-pill:9999px; --space-2:12px; --space-3:16px; --space-4:24px;
       --shadow:0 0 15px rgba(0,0,0,.5);
       --table-bg:#202020; --table-row:#1e1e1e; --muted:#cfcfcf;
@@ -29,16 +28,14 @@
       width:100%;
       max-width:1200px;
       gap:var(--space-4);
-
-      /* NEW: align children vertically relative to each other */
-      align-items: center;
+      align-items:center; /* vertically center left to right column’s height */
     }
     .column-left{
       flex:0 0 30%;
       max-width:30%;
       display:flex; flex-direction:column;
     }
-    .column-right{ flex:1 1 0; min-width:0; padding: 10px; }
+    .column-right{ flex:1 1 0; min-width:0; padding:10px; }
 
     /* Boss (left) */
     .boss-container{ display:flex; flex-direction:column; gap:var(--space-3); text-align:center; }
@@ -64,14 +61,16 @@
     }
     .hp-text{ margin:0; font-weight:800; line-height:1.2; font-size:clamp(.95rem, 4.5vw, 1.25rem); text-shadow:0 1px 0 rgba(0,0,0,.3); }
 
-    /* Leaderboard (right) */
-    .leaderboard{
+    /* Card base */
+    .card{
       background:var(--table-bg);
       border:1px solid #111;
       border-radius:16px;
       padding:16px;
       box-shadow:var(--shadow);
     }
+
+    /* Leaderboard (right) */
     .leaderboard h2{ margin:0 0 8px 0; font-size:clamp(1.1rem, 3.5vw, 1.4rem); }
     .lb-note{ margin:0 0 12px 0; color:var(--muted); font-size:.95rem; }
 
@@ -121,6 +120,23 @@
       text-shadow:0 1px 0 rgba(0,0,0,.4);
     }
 
+    /* Damage history table */
+    .history{ margin-top:16px; }
+    .history h3{ margin:0 0 8px 0; font-size:clamp(1rem, 3.5vw, 1.2rem); }
+    .hist-table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0 6px;
+    }
+    .hist-row{ background:var(--table-row); border-radius:12px; }
+    .hist-td{ padding:10px 12px; font-size:.95rem; }
+    .hist-row .hist-td:first-child{ border-radius:12px; }
+
+    .damage-num {
+      color: #ff4d4d;   /* bright red */
+      font-weight: 700;
+    }
+
     /* Narrow screens: stack columns */
     @media (max-width:520px){
       .layout{ flex-wrap:wrap; }
@@ -145,7 +161,6 @@
         <div class="boss-portrait">
           <img id="bossImage" src="assets/img/boss-1.png" alt="Boss portrait" />
         </div>
-
         <div class="hp-wrap">
           <div class="hp-bar-background" aria-label="Health bar">
             <div class="hp-bar-foreground" id="healthBar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"></div>
@@ -157,22 +172,28 @@
 
     <!-- RIGHT (70%) -->
     <div class="column-right">
-      <div class="leaderboard">
+      <!-- Leaderboard -->
+      <div class="leaderboard card">
         <h2>Skor Leaderboard</h2>
         <p class="lb-note">Diurutkan berdasarkan "total damage" (tertinggi terlebih dahulu)</p>
-
         <table class="lb-table" aria-describedby="Leaderboard sorted by total damage">
           <thead>
             <tr>
               <th class="lb-th">Grup</th>
               <th class="lb-th">Mana</th>
               <th class="lb-th">Total Damage</th>
-              <th class="lb-th">Games Played</th>
+              <th class="lb-th">Jumlah Games</th>
             </tr>
           </thead>
-          <tbody id="lbBody">
-            <!-- rows injected by JS -->
-          </tbody>
+          <tbody id="lbBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Damage History -->
+      <div class="history card">
+        <h3>Histori Damage (5 Terakhir)</h3>
+        <table class="hist-table" aria-describedby="Latest damage dealt events">
+          <tbody id="histBody"></tbody>
         </table>
       </div>
     </div>
@@ -182,6 +203,7 @@
     /* ===== Endpoints ===== */
     const UPDATE_HEALTH_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
     const LEADERBOARD_SCRIPT_URL   = "YOUR_LEADERBOARD_APPS_SCRIPT_URL_HERE";
+    const DAMAGE_HISTORY_SCRIPT_URL= "YOUR_DAMAGE_HISTORY_APPS_SCRIPT_URL_HERE";
 
     /* ===== Assets ===== */
     const IMG_FULL  = "assets/img/boss-1.png"; // 50–100% (and 100%)
@@ -193,6 +215,7 @@
     const healthText = document.getElementById('healthText');
     const bossImage  = document.getElementById('bossImage');
     const lbBody     = document.getElementById('lbBody');
+    const histBody   = document.getElementById('histBody');
 
     /* ===== Boss health + portrait ===== */
     function setBossImageByHP(percent){
@@ -224,33 +247,17 @@
 
     /* ===== Leaderboard ===== */
     function renderLeaderboard(groups){
-      // sort by totalDamage desc
-      groups.sort((a,b) => (b.totalDamage||0) - (a.totalDamage||0));
-
-      // clear
-      lbBody.innerHTML = "";
-
+      groups.sort((a,b) => (b.totalDamage||0) - (a.totalDamage||0)); // sort by totalDamage desc
+      lbBody.innerHTML = ""; // clear
       for (const g of groups){
-        const tr = document.createElement('tr');
-        tr.className = "lb-row";
+        const tr = document.createElement('tr'); tr.className = "lb-row";
 
-        const nameTd = document.createElement('td');
-        nameTd.className = "lb-td";
-        nameTd.textContent = g.name || "—";
-
-        const manaTd = document.createElement('td');
-        manaTd.className = "lb-td";
+        const nameTd = td("lb-td", g.name || "—");
+        const manaTd = document.createElement('td'); manaTd.className = "lb-td";
         manaTd.appendChild(buildManaBar(g.manaCurrent, g.manaMax));
-
-        const dmgTd = document.createElement('td');
-        dmgTd.className = "lb-td";
-        dmgTd.textContent = (g.totalDamage ?? 0).toLocaleString();
-
-        const gamesTd = document.createElement('td');
-        gamesTd.className = "lb-td";
-        const played = g.gamesPlayed ?? 0;
-        const total  = g.gamesTotal  ?? 0;
-        gamesTd.textContent = `${played} / ${total}`;
+        const dmgTd  = td("lb-td", (g.totalDamage ?? 0).toLocaleString());
+        const games  = `${g.gamesPlayed ?? 0} / ${g.gamesTotal ?? 0}`;
+        const gamesTd= td("lb-td", games);
 
         tr.append(nameTd, manaTd, dmgTd, gamesTd);
         lbBody.appendChild(tr);
@@ -262,23 +269,10 @@
       max     = Math.max(1, Number(max));
       const pct = Math.max(0, Math.min(100, (current/max)*100));
 
-      const wrap = document.createElement('div');
-      wrap.className = "mana-wrap";
-
-      const barBg = document.createElement('div');
-      barBg.className = "mana-bar-bg";
-      barBg.setAttribute('role','progressbar');
-      barBg.setAttribute('aria-valuemin','0');
-      barBg.setAttribute('aria-valuemax','100');
-      barBg.setAttribute('aria-valuenow', String(Math.round(pct)));
-
-      const barFg = document.createElement('div');
-      barFg.className = "mana-bar-fg";
-      barFg.style.width = pct + '%';
-
-      const text = document.createElement('div');
-      text.className = "mana-text";
-      text.textContent = `${current.toLocaleString()} / ${max.toLocaleString()} MP`;
+      const wrap = div("mana-wrap");
+      const barBg = div("mana-bar-bg", { role:"progressbar", "aria-valuemin":"0", "aria-valuemax":"100", "aria-valuenow":String(Math.round(pct)) });
+      const barFg = div("mana-bar-fg"); barFg.style.width = pct + '%';
+      const text  = div("mana-text"); text.textContent = `${current.toLocaleString()} / ${max.toLocaleString()} MP`;
 
       barBg.appendChild(barFg);
       wrap.append(barBg, text);
@@ -292,37 +286,80 @@
         const data = await res.json();
         // Expect an array of groups
         renderLeaderboard(Array.isArray(data) ? data : (data.groups || []));
+        // If your leaderboard endpoint already returns history under `history`, render it too:
+        if (data && data.history) renderDamageHistory(data.history);
       }catch(e){
         console.error(e);
-        // Fallback sample so UI still renders
         renderLeaderboard([
-          { name:"Jaya Bersama",  manaCurrent:120, manaMax:200, totalDamage:5300, gamesPlayed:2, gamesTotal:6 },
-          { name:"Sukacita Bersama",  manaCurrent: 80, manaMax:150, totalDamage:4700, gamesPlayed:1, gamesTotal:6 },
-          { name:"Sadar Bersama", manaCurrent: 10, manaMax:100, totalDamage:2500, gamesPlayed:4, gamesTotal:6 },
-          { name:"Tenang Bersama", manaCurrent: 30, manaMax:100, totalDamage:3250, gamesPlayed:5, gamesTotal:6 },
-          { name:"Hidup Bersama", manaCurrent: 0, manaMax:100, totalDamage:3950, gamesPlayed:6, gamesTotal:6 }
+          { name:"Jaya Bersama",       manaCurrent:120, manaMax:200, totalDamage:5300, gamesPlayed:2, gamesTotal:6 },
+          { name:"Hidup Bersama",      manaCurrent:  0, manaMax:100, totalDamage:3950, gamesPlayed:6, gamesTotal:6 },
+          { name:"Tenang Bersama",     manaCurrent: 30, manaMax:100, totalDamage:3250, gamesPlayed:5, gamesTotal:6 },
+          { name:"Sukacita Bersama",   manaCurrent: 80, manaMax:150, totalDamage:4700, gamesPlayed:1, gamesTotal:6 },
+          { name:"Sadar Bersama",      manaCurrent: 10, manaMax:100, totalDamage:2500, gamesPlayed:4, gamesTotal:6 }
         ]);
       }
     }
 
+    /* ===== Damage History ===== */
+    // Expected item shape: { team: "Name", damage: 123, timestamp: "2025-08-25T10:15:00Z" }
+    function renderDamageHistory(history, getXNumberOfRecords){
+      if (!Array.isArray(history)) return;
+      // Sort newest first, then take getXNumberOfRecords
+      history.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+      const topRecords = history.slice(0,getXNumberOfRecords);
+
+      histBody.innerHTML = "";
+      for (const item of topRecords){
+        const tr = document.createElement('tr'); tr.className = "hist-row";
+        const tdMsg = document.createElement('td'); tdMsg.className = "hist-td";
+        const team = document.createElement('strong'); team.textContent = item.team || "—";
+        const dmg  = document.createElement('strong');
+        dmg.className = "damage-num";
+        dmg.textContent  = (item.damage ?? 0).toLocaleString();
+
+        tdMsg.append(team, document.createTextNode(" ⚔️ "), dmg, document.createTextNode(" damage terhadap Boss"));
+        tr.appendChild(tdMsg);
+        histBody.appendChild(tr);
+      }
+    }
+
+    async function updateHistory(){
+      const noOfRecords = 5;
+
+      try{
+        const res = await fetch(DAMAGE_HISTORY_SCRIPT_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error("History API not ok");
+        const data = await res.json();
+        renderDamageHistory(Array.isArray(data) ? data : (data.history || []), noOfRecords);
+      }catch(e){
+        console.error(e);
+        // Fallback demo data (newest first after sort)
+        renderDamageHistory([
+          { team:"Hidup Bersama",    damage: 450, timestamp: "2025-08-25T11:18:00Z" },
+          { team:"Tenang Bersama",   damage: 320, timestamp: "2025-08-25T11:16:00Z" },
+          { team:"Jaya Bersama",     damage: 900, timestamp: "2025-08-25T11:10:00Z" },
+          { team:"Sukacita Bersama", damage: 120, timestamp: "2025-08-25T11:09:30Z" },
+          { team:"Sadar Bersama",    damage: 210, timestamp: "2025-08-25T11:06:00Z" },
+        ], noOfRecords);
+      }
+    }
+
+    /* ===== Helpers ===== */
+    function td(cls, text){ const el=document.createElement('td'); el.className=cls; el.textContent=text; return el; }
+    function div(cls, attrs){ const el=document.createElement('div'); el.className=cls; if(attrs){ for(const k in attrs){ el.setAttribute(k, attrs[k]); } } return el; }
+
     /* ===== Kickoff + intervals ===== */
-    const HIT_API_EVERY_X_MIN = 20;
-    const HIT_API_EVERY_SEC = HIT_API_EVERY_X_MIN * 60;
-    const HIT_API_EVERY_MIL_SEC = HIT_API_EVERY_SEC * 100;
+    const HIT_API_EVERY_MIN = 20;
+    const INTERVAL_MS = HIT_API_EVERY_MIN * 60 * 1000;
 
-    // asuumptions:
-    // - 7 devices
-    // - 5 games
-    // - run for 3 hours (180 mins)
-    //
-    // 7 devices x 5 games = 35 requests
-    // (180 / 20) * 35 = 315 requests
     updateHealth();
-    setInterval(updateHealth, HIT_API_EVERY_MIL_SEC);
-
     updateLeaderboard();
-    // Update leaderboard every 30s (tweak as needed)
-    setInterval(updateLeaderboard, HIT_API_EVERY_MIL_SEC);
+    updateHistory();
+
+    // Polling
+    setInterval(updateHealth, INTERVAL_MS);
+    setInterval(updateLeaderboard, INTERVAL_MS);
+    setInterval(updateHistory, INTERVAL_MS);
   </script>
 </body>
 </html>

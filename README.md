@@ -6,7 +6,7 @@
 - [X] Make it mobile responsive
 - [X] Boss' Pic / GIF Animation (3-4 based on health)
 - [X] Leaderboard UI
-- [ ] History of Damage Dealt table UI
+- [X] History of Damage Dealt table UI
 - [ ] Connect FE to BE endpoint
 
 ## Backend
