@@ -29,6 +29,9 @@
       width:100%;
       max-width:1200px;
       gap:var(--space-4);
+
+      /* NEW: align children vertically relative to each other */
+      align-items: center;
     }
     .column-left{
       flex:0 0 30%;
@@ -295,7 +298,9 @@
         renderLeaderboard([
           { name:"Jaya Bersama",  manaCurrent:120, manaMax:200, totalDamage:5300, gamesPlayed:2, gamesTotal:6 },
           { name:"Sukacita Bersama",  manaCurrent: 80, manaMax:150, totalDamage:4700, gamesPlayed:1, gamesTotal:6 },
-          { name:"Sadar Bersama", manaCurrent: 60, manaMax:100, totalDamage:2950, gamesPlayed:1, gamesTotal:6 }
+          { name:"Sadar Bersama", manaCurrent: 10, manaMax:100, totalDamage:2500, gamesPlayed:4, gamesTotal:6 },
+          { name:"Tenang Bersama", manaCurrent: 30, manaMax:100, totalDamage:3250, gamesPlayed:5, gamesTotal:6 },
+          { name:"Hidup Bersama", manaCurrent: 0, manaMax:100, totalDamage:3950, gamesPlayed:6, gamesTotal:6 }
         ]);
       }
     }
