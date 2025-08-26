@@ -20,13 +20,13 @@
       margin:0; color:var(--fg); background:var(--bg);
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
       display:flex; align-items:center; justify-content:center; min-height:100svh;
-      padding: calc(env(safe-area-inset-top, 0px) + var(--space-4)) var(--space-4) var(--space-4);
     }
 
     /* Two-column layout */
     .layout{
       display:flex;
       width:100%;
+      max-height:100%;
       max-width:1200px;
       gap:var(--space-4);
       align-items:center; /* vertically center left to right column’s height */
@@ -36,7 +36,7 @@
       max-width:30%;
       display:flex; flex-direction:column;
     }
-    .column-right{ flex:1 1 0; min-width:0; padding:10px; }
+    .column-right{ flex:1 1 0; min-width:0; padding:10px; text-align: center;}
 
     /* Boss (left) */
     .boss-container{ display:flex; flex-direction:column; gap:var(--space-3); text-align:center; }
@@ -50,7 +50,7 @@
 
     .hp-wrap{ display:flex; flex-direction:column; gap:var(--space-2); align-items:stretch; }
     .hp-bar-background{
-      display:flex; align-items:center; width:100%;
+      display:flex; align-items:center;
       background:var(--bar-bg); border:3px solid var(--bar-border);
       border-radius:var(--radius-pill); padding:6px; box-shadow:var(--shadow);
       min-height:clamp(28px, 6vw, 56px);
@@ -61,6 +61,7 @@
       width:100%; transition:width 1.5s ease-out;
     }
     .hp-text{ margin:0; font-weight:800; line-height:1.2; font-size:clamp(.95rem, 4.5vw, 1.25rem); text-shadow:0 1px 0 rgba(0,0,0,.3); }
+    .copyright { margin-top: 50px; text-align: center; }
 
     /* Card base */
     .card{
@@ -84,6 +85,7 @@
       padding:10px 12px;
       text-align:left;
       font-size:.95rem;
+      text-align: center;
     }
     .lb-th{
       color:#ddd; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
@@ -128,6 +130,7 @@
       width:100%;
       border-collapse:separate;
       border-spacing:0 6px;
+      text-align: left;
     }
     .hist-row{ background:var(--table-row); border-radius:12px; }
     .hist-td{ padding:10px 12px; font-size:.95rem; }
@@ -142,22 +145,15 @@
     @media (max-width:520px){
       .layout{
         flex-wrap:wrap;
-        align-items:flex-start;
+        align-items:flex-start; /* was center */
       }
       .column-left{ flex:1 1 100%; max-width:100%; }
-      .column-right{ flex:1 1 100%; }
+      .column-right{ flex:1 1 100%; padding-bottom: calc(env(safe-area-inset-top, 0px) + 30px) }
       .lb-th:nth-child(3), .lb-td:nth-child(3){ display:none; } /* hide Total Damage label column header on very small screens to save space; value remains in column 2 text */
 
       /* extra breathing room for the title area */
       .boss-container{
-        padding-top: calc(env(safe-area-inset-top, 0px) + 80px);
-      }
-
-      /* keep the title readable without truncation */
-      .boss-container h1{
-        font-size: clamp(1rem, 6vw, 1.5rem);
-        white-space: normal;
-        word-break: break-word;
+        padding-top: calc(env(safe-area-inset-top, 0px) + 30px);
       }
     }
 
@@ -184,13 +180,17 @@
           <p class="hp-text" id="healthText">Loading...</p>
         </div>
       </div>
+
+      <div class="copyright">
+        <h5>© 2025 SMB Hackers</h5>
+      </div>
     </div>
 
     <!-- RIGHT (70%) -->
     <div class="column-right">
       <!-- Leaderboard -->
       <div class="leaderboard card">
-        <h2>Skor Leaderboard</h2>
+        <h2>Leaderboard</h2>
         <p class="lb-note">Diurutkan berdasarkan "total damage" (tertinggi terlebih dahulu)</p>
         <table class="lb-table" aria-describedby="Leaderboard sorted by total damage">
           <thead>
@@ -207,7 +207,7 @@
 
       <!-- Damage History -->
       <div class="history card">
-        <h3>Histori Damage (5 Terakhir)</h3>
+        <h3>Battle Log (5 Terakhir)</h3>
         <table class="hist-table" aria-describedby="Latest damage dealt events">
           <tbody id="histBody"></tbody>
         </table>
@@ -220,6 +220,8 @@
     const UPDATE_HEALTH_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
     const LEADERBOARD_SCRIPT_URL   = "YOUR_LEADERBOARD_APPS_SCRIPT_URL_HERE";
     const DAMAGE_HISTORY_SCRIPT_URL= "YOUR_DAMAGE_HISTORY_APPS_SCRIPT_URL_HERE";
+
+    // FIXME: Add a tombstone if health goes negative
 
     /* ===== Assets ===== */
     const IMG_FULL  = "assets/img/boss-1.png"; // 50–100% (and 100%)
@@ -240,13 +242,15 @@
       else bossImage.src = IMG_FULL;
     }
 
-    async function updateHealth() {
+    // expected result: { currentHP: 250, maxHP: 300 }
+    async function getCurrBossHealth(data) {
       try {
-        const res = await fetch(UPDATE_HEALTH_SCRIPT_URL, { cache: "no-store" });
-        if (!res.ok) throw new Error("Health API not ok");
-        const data = await res.json();
+        // const res = await fetch(UPDATE_HEALTH_SCRIPT_URL, { cache: "no-store" });
+        // if (!res.ok) throw new Error("Health API not ok");
+        // const data = await res.json();
+        const data = { currentHP: 80, maxHP: 100 }
 
-        const currentHP = Math.max(0, Number(data.currentHP));
+        const currentHP = Number(data.currentHP);
         const maxHP     = Math.max(1, Number(data.maxHP));
         const pct       = Math.max(0, Math.min(100, (currentHP / maxHP) * 100));
 
@@ -262,7 +266,8 @@
     }
 
     /* ===== Leaderboard ===== */
-    function renderLeaderboard(groups){
+    // expected result: [{ name:"Jaya Bersama", manaCurrent:120, manaMax:200, totalDamage:5300, gamesPlayed:2, gamesTotal:6 }]
+    function renderLeaderboardOfAllTeams(groups){
       groups.sort((a,b) => (b.totalDamage||0) - (a.totalDamage||0)); // sort by totalDamage desc
       lbBody.innerHTML = ""; // clear
       for (const g of groups){
@@ -295,18 +300,18 @@
       return wrap;
     }
 
-    async function updateLeaderboard(){
+    async function updateLeaderboard(data){
       try{
         const res = await fetch(LEADERBOARD_SCRIPT_URL, { cache: "no-store" });
         if (!res.ok) throw new Error("Leaderboard API not ok");
         const data = await res.json();
         // Expect an array of groups
-        renderLeaderboard(Array.isArray(data) ? data : (data.groups || []));
+        renderLeaderboardOfAllTeams(Array.isArray(data) ? data : (data.groups || []));
         // If your leaderboard endpoint already returns history under `history`, render it too:
-        if (data && data.history) renderDamageHistory(data.history);
+        if (data && data.history) renderLast5DamageHistory(data.history);
       }catch(e){
         console.error(e);
-        renderLeaderboard([
+        renderLeaderboardOfAllTeams([
           { name:"Jaya Bersama",       manaCurrent:120, manaMax:200, totalDamage:5300, gamesPlayed:2, gamesTotal:6 },
           { name:"Hidup Bersama",      manaCurrent:  0, manaMax:100, totalDamage:3950, gamesPlayed:6, gamesTotal:6 },
           { name:"Tenang Bersama",     manaCurrent: 30, manaMax:100, totalDamage:3250, gamesPlayed:5, gamesTotal:6 },
@@ -317,8 +322,8 @@
     }
 
     /* ===== Damage History ===== */
-    // Expected item shape: { team: "Name", damage: 123, timestamp: "2025-08-25T10:15:00Z" }
-    function renderDamageHistory(history, getXNumberOfRecords){
+    // Expected item shape: [{ team: "Name", damage: 123, timestamp: "2025-08-25T10:15:00Z" }]
+    function renderLast5DamageHistory(history, getXNumberOfRecords){
       if (!Array.isArray(history)) return;
       // Sort newest first, then take getXNumberOfRecords
       history.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -339,18 +344,15 @@
       }
     }
 
-    async function updateHistory(){
+    async function updateHistory(data){
       const noOfRecords = 5;
 
       try{
-        const res = await fetch(DAMAGE_HISTORY_SCRIPT_URL, { cache: "no-store" });
-        if (!res.ok) throw new Error("History API not ok");
-        const data = await res.json();
-        renderDamageHistory(Array.isArray(data) ? data : (data.history || []), noOfRecords);
+        renderLast5DamageHistory(Array.isArray(data) ? data : (data.history || []), noOfRecords);
       }catch(e){
         console.error(e);
         // Fallback demo data (newest first after sort)
-        renderDamageHistory([
+        renderLast5DamageHistory([
           { team:"Hidup Bersama",    damage: 450, timestamp: "2025-08-25T11:18:00Z" },
           { team:"Tenang Bersama",   damage: 320, timestamp: "2025-08-25T11:16:00Z" },
           { team:"Jaya Bersama",     damage: 900, timestamp: "2025-08-25T11:10:00Z" },
@@ -368,12 +370,27 @@
     const HIT_API_EVERY_MIN = 20;
     const INTERVAL_MS = HIT_API_EVERY_MIN * 60 * 1000;
 
-    updateHealth();
+
+    // FIXME: add a try-and-catch block
+    // const res = await fetch(UPDATE_HEALTH_SCRIPT_URL, { cache: "no-store" });
+    // if (!res.ok) throw new Error("Health API not ok");
+    // const data = await res.json();
+
+    // {
+    //    health: { currentHP: 250, maxHP: 300 },
+    //    leaderboard: [{ name:"Jaya Bersama", manaCurrent:120, manaMax:200, totalDamage:5300, gamesPlayed:2, gamesTotal:6 }],
+    //    lastFiveDamageHistory: [{ team: "Name", damage: 123, timestamp: "2025-08-25T10:15:00Z" }]
+    // }
+    getCurrBossHealth();
     updateLeaderboard();
     updateHistory();
 
+    //  getCurrBossHealth(res.health);
+    // updateLeaderboard(res.leaderboard);
+    // updateHistory(res.lastFiveDamageHistory);
+
     // Polling
-    setInterval(updateHealth, INTERVAL_MS);
+    setInterval(getCurrBossHealth, INTERVAL_MS);
     setInterval(updateLeaderboard, INTERVAL_MS);
     setInterval(updateHistory, INTERVAL_MS);
   </script>
