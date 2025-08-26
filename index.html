@@ -221,12 +221,11 @@
     const LEADERBOARD_SCRIPT_URL   = "YOUR_LEADERBOARD_APPS_SCRIPT_URL_HERE";
     const DAMAGE_HISTORY_SCRIPT_URL= "YOUR_DAMAGE_HISTORY_APPS_SCRIPT_URL_HERE";
 
-    // FIXME: Add a tombstone if health goes negative
-
     /* ===== Assets ===== */
-    const IMG_FULL  = "assets/img/boss-1.png"; // 50–100% (and 100%)
-    const IMG_HALF  = "assets/img/boss-2.png"; // < 50%
-    const IMG_QUART = "assets/img/boss-3.png"; // < 25%
+    const IMG_FULL  = "assets/img/boss-1.png"; // 75–100% (and 100%)
+    const IMG_HALF  = "assets/img/boss-2.png"; // < 75%
+    const IMG_QUART = "assets/img/boss-3.png"; // < 50%
+    const IMG_TOMBSTONE = "assets/img/boss-4.png"; // <= 0%
 
     /* ===== DOM ===== */
     const healthBar  = document.getElementById('healthBar');
@@ -237,8 +236,9 @@
 
     /* ===== Boss health + portrait ===== */
     function setBossImageByHP(percent){
-      if (percent < 25) bossImage.src = IMG_QUART;
-      else if (percent < 50) bossImage.src = IMG_HALF;
+      if (percent <= 0) bossImage.src = IMG_TOMBSTONE;
+      else if (percent < 50) bossImage.src = IMG_QUART;
+      else if (percent < 75) bossImage.src = IMG_HALF;
       else bossImage.src = IMG_FULL;
     }
 
@@ -248,7 +248,7 @@
         // const res = await fetch(UPDATE_HEALTH_SCRIPT_URL, { cache: "no-store" });
         // if (!res.ok) throw new Error("Health API not ok");
         // const data = await res.json();
-        const data = { currentHP: 80, maxHP: 100 }
+        const data = { currentHP: -10, maxHP: 100 }
 
         const currentHP = Number(data.currentHP);
         const maxHP     = Math.max(1, Number(data.maxHP));
