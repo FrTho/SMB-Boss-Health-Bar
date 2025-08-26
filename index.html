@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Final Boss Health</title>
   <style>
     :root{
@@ -19,7 +19,8 @@
     body{
       margin:0; color:var(--fg); background:var(--bg);
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
-      display:flex; align-items:center; justify-content:center; min-height:100svh; padding:var(--space-4);
+      display:flex; align-items:center; justify-content:center; min-height:100svh;
+      padding: calc(env(safe-area-inset-top, 0px) + var(--space-4)) var(--space-4) var(--space-4);
     }
 
     /* Two-column layout */
@@ -139,10 +140,25 @@
 
     /* Narrow screens: stack columns */
     @media (max-width:520px){
-      .layout{ flex-wrap:wrap; }
+      .layout{
+        flex-wrap:wrap;
+        align-items:flex-start;
+      }
       .column-left{ flex:1 1 100%; max-width:100%; }
       .column-right{ flex:1 1 100%; }
       .lb-th:nth-child(3), .lb-td:nth-child(3){ display:none; } /* hide Total Damage label column header on very small screens to save space; value remains in column 2 text */
+
+      /* extra breathing room for the title area */
+      .boss-container{
+        padding-top: calc(env(safe-area-inset-top, 0px) + 80px);
+      }
+
+      /* keep the title readable without truncation */
+      .boss-container h1{
+        font-size: clamp(1rem, 6vw, 1.5rem);
+        white-space: normal;
+        word-break: break-word;
+      }
     }
 
     @media (prefers-reduced-motion: reduce){
