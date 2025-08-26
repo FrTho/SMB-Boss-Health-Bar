@@ -216,10 +216,8 @@
   </div>
 
   <script>
-    /* ===== Endpoints ===== */
-    const UPDATE_HEALTH_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
-    const LEADERBOARD_SCRIPT_URL   = "YOUR_LEADERBOARD_APPS_SCRIPT_URL_HERE";
-    const DAMAGE_HISTORY_SCRIPT_URL= "YOUR_DAMAGE_HISTORY_APPS_SCRIPT_URL_HERE";
+    /* ===== Endpoint(s) ===== */
+    const APP_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE"
 
     /* ===== Assets ===== */
     const IMG_FULL  = "assets/img/boss-1.png"; // 75–100% (and 100%)
@@ -242,31 +240,20 @@
       else bossImage.src = IMG_FULL;
     }
 
-    // expected result: { currentHP: 250, maxHP: 300 }
-    async function getCurrBossHealth(data) {
-      try {
-        // const res = await fetch(UPDATE_HEALTH_SCRIPT_URL, { cache: "no-store" });
-        // if (!res.ok) throw new Error("Health API not ok");
-        // const data = await res.json();
-        const data = { currentHP: -10, maxHP: 100 }
+    // expected input: { currentHP: 250, maxHP: 300 }
+    async function updateCurrBossHealth(data) {
+      const currentHP = Number(data.currentHP);
+      const maxHP     = Math.max(1, Number(data.maxHP));
+      const pct       = Math.max(0, Math.min(100, (currentHP / maxHP) * 100));
 
-        const currentHP = Number(data.currentHP);
-        const maxHP     = Math.max(1, Number(data.maxHP));
-        const pct       = Math.max(0, Math.min(100, (currentHP / maxHP) * 100));
+      healthBar.style.width = pct + '%';
+      healthBar.setAttribute('aria-valuenow', Math.round(pct));
+      healthText.textContent = `${currentHP.toLocaleString()} / ${maxHP.toLocaleString()} HP`;
 
-        healthBar.style.width = pct + '%';
-        healthBar.setAttribute('aria-valuenow', Math.round(pct));
-        healthText.textContent = `${currentHP.toLocaleString()} / ${maxHP.toLocaleString()} HP`;
-
-        setBossImageByHP(pct);
-      } catch (e) {
-        console.error(e);
-        healthText.textContent = "Error fetching data.";
-      }
+      setBossImageByHP(pct);
     }
 
     /* ===== Leaderboard ===== */
-    // expected result: [{ name:"Jaya Bersama", manaCurrent:120, manaMax:200, totalDamage:5300, gamesPlayed:2, gamesTotal:6 }]
     function renderLeaderboardOfAllTeams(groups){
       groups.sort((a,b) => (b.totalDamage||0) - (a.totalDamage||0)); // sort by totalDamage desc
       lbBody.innerHTML = ""; // clear
@@ -300,29 +287,15 @@
       return wrap;
     }
 
+    // expected input: [{ name:"Jaya Bersama", manaCurrent:120, manaMax:200, totalDamage:5300, gamesPlayed:2, gamesTotal:6 }]
     async function updateLeaderboard(data){
-      try{
-        const res = await fetch(LEADERBOARD_SCRIPT_URL, { cache: "no-store" });
-        if (!res.ok) throw new Error("Leaderboard API not ok");
-        const data = await res.json();
-        // Expect an array of groups
-        renderLeaderboardOfAllTeams(Array.isArray(data) ? data : (data.groups || []));
-        // If your leaderboard endpoint already returns history under `history`, render it too:
-        if (data && data.history) renderLast5DamageHistory(data.history);
-      }catch(e){
-        console.error(e);
-        renderLeaderboardOfAllTeams([
-          { name:"Jaya Bersama",       manaCurrent:120, manaMax:200, totalDamage:5300, gamesPlayed:2, gamesTotal:6 },
-          { name:"Hidup Bersama",      manaCurrent:  0, manaMax:100, totalDamage:3950, gamesPlayed:6, gamesTotal:6 },
-          { name:"Tenang Bersama",     manaCurrent: 30, manaMax:100, totalDamage:3250, gamesPlayed:5, gamesTotal:6 },
-          { name:"Sukacita Bersama",   manaCurrent: 80, manaMax:150, totalDamage:4700, gamesPlayed:1, gamesTotal:6 },
-          { name:"Sadar Bersama",      manaCurrent: 10, manaMax:100, totalDamage:2500, gamesPlayed:4, gamesTotal:6 }
-        ]);
-      }
+      // Expect an array of groups
+      renderLeaderboardOfAllTeams(Array.isArray(data) ? data : (data.groups || []));
+      // If your leaderboard endpoint already returns history under `history`, render it too:
+      if (data && data.history) renderLast5DamageHistory(data.history);
     }
 
     /* ===== Damage History ===== */
-    // Expected item shape: [{ team: "Name", damage: 123, timestamp: "2025-08-25T10:15:00Z" }]
     function renderLast5DamageHistory(history, getXNumberOfRecords){
       if (!Array.isArray(history)) return;
       // Sort newest first, then take getXNumberOfRecords
@@ -344,7 +317,8 @@
       }
     }
 
-    async function updateHistory(data){
+    // Expected item shape: [{ team: "Name", damage: 123, timestamp: "2025-08-25T10:15:00Z" }]
+    async function updateHistoryBoard(data){
       const noOfRecords = 5;
 
       try{
@@ -352,13 +326,50 @@
       }catch(e){
         console.error(e);
         // Fallback demo data (newest first after sort)
-        renderLast5DamageHistory([
-          { team:"Hidup Bersama",    damage: 450, timestamp: "2025-08-25T11:18:00Z" },
-          { team:"Tenang Bersama",   damage: 320, timestamp: "2025-08-25T11:16:00Z" },
-          { team:"Jaya Bersama",     damage: 900, timestamp: "2025-08-25T11:10:00Z" },
-          { team:"Sukacita Bersama", damage: 120, timestamp: "2025-08-25T11:09:30Z" },
-          { team:"Sadar Bersama",    damage: 210, timestamp: "2025-08-25T11:06:00Z" },
-        ], noOfRecords);
+        renderLast5DamageHistory(data, noOfRecords);
+      }
+    }
+
+    const healthDummy = { currentHP: -10, maxHP: 100 };
+    const leaderboardDummy = [
+      { name:"Jaya Bersama",       manaCurrent:120, manaMax:200, totalDamage:5300, gamesPlayed:2, gamesTotal:6 },
+      { name:"Hidup Bersama",      manaCurrent:  0, manaMax:100, totalDamage:3950, gamesPlayed:6, gamesTotal:6 },
+      { name:"Tenang Bersama",     manaCurrent: 30, manaMax:100, totalDamage:3250, gamesPlayed:5, gamesTotal:6 },
+      { name:"Sukacita Bersama",   manaCurrent: 80, manaMax:150, totalDamage:4700, gamesPlayed:1, gamesTotal:6 },
+      { name:"Sadar Bersama",      manaCurrent: 10, manaMax:100, totalDamage:2500, gamesPlayed:4, gamesTotal:6 }
+    ];
+    const historyboardDummy = [
+      { team:"Hidup Bersama",    damage: 450, timestamp: "2025-08-25T11:18:00Z" },
+      { team:"Tenang Bersama",   damage: 320, timestamp: "2025-08-25T11:16:00Z" },
+      { team:"Jaya Bersama",     damage: 900, timestamp: "2025-08-25T11:10:00Z" },
+      { team:"Sukacita Bersama", damage: 120, timestamp: "2025-08-25T11:09:30Z" },
+      { team:"Sadar Bersama",    damage: 210, timestamp: "2025-08-25T11:06:00Z" },
+    ];
+
+    async function driver() {
+      try {
+        const res = await fetch(APP_SCRIPT_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error("API not ok");
+
+        // expected results:
+        // {
+        //    health: { currentHP: 250, maxHP: 300 },
+        //    leaderboard: [{ name:"Jaya Bersama", manaCurrent:120, manaMax:200, totalDamage:5300, gamesPlayed:2, gamesTotal:6 }],
+        //    lastFiveDamageHistory: [{ team: "Name", damage: 123, timestamp: "2025-08-25T10:15:00Z" }]
+        // }
+        const data = await res.json();
+
+        updateCurrBossHealth(data.health);
+        updateLeaderboard(data.leaderboard);
+        updateHistoryBoard(data.lastFiveDamageHistory);
+      }catch(e){
+        console.error(e);
+
+        healthText.textContent = "Error fetching data.";
+
+        updateCurrBossHealth(healthDummy);
+        updateLeaderboard(leaderboardDummy);
+        updateHistoryBoard(historyboardDummy);
       }
     }
 
@@ -370,29 +381,12 @@
     const HIT_API_EVERY_MIN = 20;
     const INTERVAL_MS = HIT_API_EVERY_MIN * 60 * 1000;
 
-
-    // FIXME: add a try-and-catch block
-    // const res = await fetch(UPDATE_HEALTH_SCRIPT_URL, { cache: "no-store" });
-    // if (!res.ok) throw new Error("Health API not ok");
-    // const data = await res.json();
-
-    // {
-    //    health: { currentHP: 250, maxHP: 300 },
-    //    leaderboard: [{ name:"Jaya Bersama", manaCurrent:120, manaMax:200, totalDamage:5300, gamesPlayed:2, gamesTotal:6 }],
-    //    lastFiveDamageHistory: [{ team: "Name", damage: 123, timestamp: "2025-08-25T10:15:00Z" }]
-    // }
-    getCurrBossHealth();
-    updateLeaderboard();
-    updateHistory();
-
-    //  getCurrBossHealth(res.health);
-    // updateLeaderboard(res.leaderboard);
-    // updateHistory(res.lastFiveDamageHistory);
+    driver()
 
     // Polling
-    setInterval(getCurrBossHealth, INTERVAL_MS);
+    setInterval(updateCurrBossHealth, INTERVAL_MS);
     setInterval(updateLeaderboard, INTERVAL_MS);
-    setInterval(updateHistory, INTERVAL_MS);
+    setInterval(updateHistoryBoard, INTERVAL_MS);
   </script>
 </body>
 </html>
