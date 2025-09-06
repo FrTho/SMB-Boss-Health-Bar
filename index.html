@@ -218,7 +218,7 @@
 
   <script>
     /* ===== Endpoint(s) ===== */
-    const APP_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE"
+    const APP_SCRIPT_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLi_SSxusGGgFpd1Rp1zgoAxnuYxUdvBfGtsi_iaailOD3vaG59jQpi5CwbCOsW6ifoTRxAsEYqn8uAHyB6KisRwS4kOQnotEobUzRKFNOybUewl1T9wEec7KLxfPe0zboiJQtw70rv-pBG8dVr4jMVND8bHoXEYhtQOSVtSIInQ2IQhzD9IOEu-1y0bBZqgcv5J90SUHVwL6WqSbtFoBqfia2qAfyhcv3PSd1IEXTEotHbEu5fgtQc1xR9KALFSxjlDRTqjP-MXEJZFrqWvFBYY2xbTnQ&lib=Mrd_-4v1OjIqjak8NIgpF3q0DGmTqv5vS"
 
     /* ===== Assets ===== */
     const IMG_FULL  = "assets/img/boss-1.png"; // 75–100% (and 100%)
@@ -385,9 +385,7 @@
     driver()
 
     // Polling
-    setInterval(updateCurrBossHealth, INTERVAL_MS);
-    setInterval(updateLeaderboard, INTERVAL_MS);
-    setInterval(updateHistoryBoard, INTERVAL_MS);
+    setInterval(driver, INTERVAL_MS);
   </script>
 </body>
 </html>
